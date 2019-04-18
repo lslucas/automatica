@@ -2,7 +2,7 @@
    "name": "death-clock",
    "version": "1.0.0",
    "scripts": {
-      "dev": "nodemon --watch \"src/\" --exec \"ts-node src/entry.ts\" -e ts",
+      "dev": "nodemon --watch \"src/\" --exec \"ts-node src/index.ts\" -e ts",
       "start": "nodemon --watch \"src/\" --exec \"ts-node src/index.ts\" -e ts",
       "build": "tsc -p ./src",
       "start-basic": "ts-node src/index.ts"
