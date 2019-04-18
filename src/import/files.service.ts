@@ -12,7 +12,7 @@ export default class FilesService {
   }
 
   listProductFiles(): Promise<String> {
-    return glob('imports/sbk_param*.txt')
+    return glob('imports/sbk_param-*.txt')
       .then((files) => {
         let stout = [];
         sortBy(files).map((file) => {
@@ -27,7 +27,7 @@ export default class FilesService {
   }
 
   listPositionFiles(): Promise<String> {
-    return glob('imports/sbk_position-*.txt')
+    return glob('imports/sbk_posi_*.txt')
       .then((files) => {
         let stout = [];
         sortBy(files).map((file) => {
