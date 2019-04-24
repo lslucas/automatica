@@ -1,8 +1,5 @@
-import {createQueryBuilder} from "typeorm";
-import {NextFunction, Request, Response} from "express";
 import { FileService, FileGroup } from "../service/FileService";
-import { File } from "../entity/File";
-import { groupBy, head, mapValues } from 'lodash';
+import * as _ from 'lodash';
 
 export class AutomaticaController {
 
@@ -21,32 +18,62 @@ export class AutomaticaController {
   }
 
   async process() {
-    const productList = await this.fileService.history('product');
-    const positionList = await this.fileService.history('position');
-    const blockList = await this.fileService.history('block');
-
-    productList.forEach(el => {
-      console.log('Posting product #', el['name']);
-      this.fileService.sendRequest(el['name'], 'product')
-        .then(res => {
-          positionList.forEach(el => {
-            console.log('Posting position #', el['name']);
-            this.fileService.sendRequest(el['name'], 'position')
-              .then(res => {
-                blockList.forEach(el => {
-                  console.log('Posting block #', el['name']);
-                  this.fileService.sendRequest(el['name'], 'block')
+    console.log(await this.fileService.filesGroupedByDate());
+    this.fileService.filesGroupedByDate()
+      .then(grp => {
+        _.each(grp, async (f, baseDate) => {
+          // console.info(`Processando ${baseDate}`);
+          // importa produto
+          const file = this.fileService.filterNameByGroup(f, 'product');
+          return await this.fileService.sendRequest(file, 'product')
+            .then(async res => {
+              if (res.return.code === 500) {
+                console.log(' - ' + res.return.message);
+                return;
+              }
+              console.info(` - ${baseDate} - produto: ${res.return.message}`);
+              // importa posição
+              const file = this.fileService.filterNameByGroup(f, 'position');
+              return await this.fileService.sendRequest(file, 'position')
+                .then(async res => {
+                  if (!res || res.return.code === 500 || res.return.code === 400) {
+                    if (!res) {
+                      return;
+                    }
+                    console.log(' - ' + res.return.message);
+                  }
+                  console.info(` - ${baseDate} - posição: ${res.return.message}`);
+                  // importa bloqueio
+                  const file = this.fileService.filterNameByGroup(f, 'block');
+                  return await this.fileService.sendRequest(file, 'block')
                     .then(res => {
-                      console.log('OK!');
+                      if (!res || res.return.code === 500 || res.return.code === 400) {
+                        if (!res) {
+                          return;
+                        }
+                        console.log(' - ' + res.return.message);
+                      }
+                      console.info(` - ${baseDate} - bloqueio: ${res.return.message}`);
                     })
                     .catch(err => {
-                      console.log(err);
-                    })
+                      console.info(` - ${baseDate} - bloqueio: ${err.message}`);
+                    });
+                })
+                .catch(err => {
+                  console.info(` - ${baseDate} - posição: ${err.message}`);
                 });
-              });
-          });
+            })
+            .catch(err => {
+              console.error(' - houve algum erro na importação:', err);
+            });
         });
-    })
+      });
+
+    return 'Importing...<br/>See <console> for detailed information s2';
+  }
+
+  filesGroupedByDate() {
+    return this.fileService.filesGroupedByDate();
   }
 
   history() {
